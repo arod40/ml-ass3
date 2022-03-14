@@ -1,5 +1,48 @@
-import numpy as np
+from math import inf
+
 import matplotlib.pyplot as plt
+import numpy as np
+
+
+def pocket_algorithm(X, y, max_iter=-1, w_init=None):
+    def perceptron(x, w):
+        val = x @ w
+        ones = np.ones(val.shape)
+        return (val >= 0) * ones - (val < 0) * ones
+
+    w = w_init if w_init is not None else np.zeros((X.shape[1], 1))
+    least_inc = inf
+    best_w = None
+    it = 0
+    while max_iter == -1 or it < max_iter:
+        it += 1
+        inc_idxs = (perceptron(X, w) != y).squeeze()
+        num_inc = inc_idxs.sum()
+
+        if num_inc < least_inc:
+            least_inc = num_inc
+            best_w = w
+        if num_inc == 0:
+            break
+
+        incorrect_x = X[inc_idxs][:1, :].transpose()
+        incorrect_y = y[inc_idxs][0].squeeze()
+        w += incorrect_y * incorrect_x
+    return best_w, (perceptron(X, w) != y).sum()
+
+
+def linear_regression(X, y):
+    X_t = X.transpose()
+    return np.linalg.inv(X_t @ X) @ X_t @ y
+
+
+def plot_line(w, x1, x2, color="black", label=""):
+    C, A, B = w
+
+    y1 = (-C - A * x1) / B
+    y2 = (-C - A * x2) / B
+
+    plt.plot([x1, x2], [y1, y2], color=color, label=label)
 
 
 def get_data():
@@ -8,18 +51,61 @@ def get_data():
     a = np.array([1, 2, 3])
     a.squeeze
 
-    y = np.concatenate([-1 * np.ones((50)), np.ones((50))])
-    x = np.random.randn(100, 2) + c[((y + 3) / 2 - 1).astype("int64")]
-    x = np.concatenate([np.ones((100, 1)), x], axis=1)
+    y = np.concatenate([-1 * np.ones((50, 1)), np.ones((50, 1))])
+    X = np.random.randn(100, 2) + c[((y.squeeze() + 3) / 2 - 1).astype("int64")]
+    X = np.concatenate([np.ones((100, 1)), X], axis=1)
 
-    return x, y
+    return X, y
+
+
+def add_outliers(y, ratio=0.1):
+    y_outliers = np.copy(y)
+    neg_y = (y == -1).squeeze()
+    neg_y_total = neg_y.sum()
+    outliers_idx = np.random.choice(
+        range(neg_y_total), int(neg_y_total * ratio), replace=False
+    )
+    switch = np.ones((neg_y_total, 1)) * -1
+    switch[outliers_idx] = 1
+    y_outliers[neg_y] = switch
+
+    return y_outliers
 
 
 if __name__ == "__main__":
-    x, y = get_data()
+    X, y = get_data()
+    y_ = y.squeeze()
 
-    plt.scatter(x[y == 1, 1], x[y == 1, 2], marker="o")
-    plt.scatter(x[y == -1, 1], x[y == -1, 2], marker="x")
+    plt.xlim(X[:, 1].min() - 1, X[:, 1].max() + 1)
+    plt.ylim(X[:, 2].min() - 1, X[:, 2].max() + 1)
 
+    plt.scatter(X[y_ == 1, 1], X[y_ == 1, 2], marker="o", color="blue")
+    plt.scatter(X[y_ == -1, 1], X[y_ == -1, 2], marker="x", color="red")
+
+    w_lg = linear_regression(X, y)
+    w_p, inc1 = pocket_algorithm(X, y, max_iter=10000)
+    w_p2, inc2 = pocket_algorithm(X, y, max_iter=10000, w_init=w_lg)
+
+    plot_line(list(w_lg), X[:, 1].min(), X[:, 1].max(), "blue")
+    plot_line(list(w_p), X[:, 1].min(), X[:, 1].max(), "red")
+    plot_line(list(w_p2), X[:, 1].min(), X[:, 1].max(), "green")
+    plt.show()
+
+    plt.xlim(X[:, 1].min() - 1, X[:, 1].max() + 1)
+    plt.ylim(X[:, 2].min() - 1, X[:, 2].max() + 1)
+
+    y_outliers = add_outliers(y)
+    y_ = y_outliers.squeeze()
+    plt.scatter(X[y_ == 1, 1], X[y_ == 1, 2], marker="o", color="blue")
+    plt.scatter(X[y_ == -1, 1], X[y_ == -1, 2], marker="x", color="red")
+
+    y = y_outliers
+    w_lg = linear_regression(X, y)
+    w_p, inc1 = pocket_algorithm(X, y, max_iter=10000)
+    w_p2, inc2 = pocket_algorithm(X, y, max_iter=10000, w_init=w_lg)
+
+    plot_line(list(w_lg), X[:, 1].min(), X[:, 1].max(), "blue")
+    plot_line(list(w_p), X[:, 1].min(), X[:, 1].max(), "red")
+    plot_line(list(w_p2), X[:, 1].min(), X[:, 1].max(), "green")
     plt.show()
 
