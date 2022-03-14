@@ -75,7 +75,7 @@ def logistic_regression(X, y, max_iter, lr):
 
     def ce(w):
         N = X.shape[0]
-        f = np.log(X @ w).sum() / N
+        f = np.log(sigmoid(X @ w)).sum() / N
         gradient = X_t @ (y * sigmoid(-y * (X @ w)))
 
         return f, gradient
