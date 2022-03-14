@@ -29,7 +29,7 @@ def unorm_weights(weights, alpha):
     return [bias] + w
 
 
-def gradient_descent(target, derivative, bounds, max_steps=10000, max_time=2):
+def gradient_descent(target, bounds, max_steps=10000, max_time=2):
     time_start = datetime.now()
 
     def check_bounds(w, lower=None, upper=None):
@@ -59,8 +59,7 @@ def gradient_descent(target, derivative, bounds, max_steps=10000, max_time=2):
     while it < max_steps and (datetime.now() - time_start).seconds < max_time:
         it += 1
 
-        f = target(w)
-        gradient = derivative(w)
+        f, gradient = target(w)
 
         if f < best_f:
             best_w = w
@@ -110,24 +109,20 @@ def logistic_regression(data):
         return sum([wi * xi for wi, xi in zip(w, x)]) + bias
 
     def ce(weights):
-        return sum([log(1 + e ** (-y * linear(weights, x))) for x, y in data]) / N
-
-    def ce_derivative(weights):
+        f = 0
         gradient = [0] * (d + 1)
 
         for x, y in data:
-            arg = e ** (y * linear(weights, x))
-            value = scalar_mult(-y / (1 + arg), [1] + x)
-            gradient = elem_wise(gradient, value, add)
+            arg = y * linear(weights, x)
+            f += log(1 + e ** (-arg))
+            gradient = elem_wise(
+                gradient, scalar_mult(-y / (1 + e ** arg), [1] + x), add
+            )
 
-        return [g / N for g in gradient]
+        return f / N, [g / N for g in gradient]
 
     w, _, _, _ = gradient_descent(
-        ce,
-        ce_derivative,
-        bounds=([-_inf] * (d + 1), [_inf] * (d + 1)),
-        max_steps=100000,
-        max_time=1,
+        ce, bounds=([-_inf] * (d + 1), [_inf] * (d + 1)), max_steps=100000, max_time=1,
     )
 
     return w
