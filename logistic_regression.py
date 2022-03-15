@@ -4,28 +4,41 @@ from math import sqrt, inf, log, e
 
 _inf = 2e9
 
-elem_wise = lambda vec1, vec2, op: [op(x, y) for x, y in zip(vec1, vec2)]
-scalar_mult = lambda scalar, vector: [scalar * x for x in vector]
+elem_wise = lambda *vectors, op: [op(*v) for v in zip(*vectors)]
 add = lambda x, y: x + y
 mult = lambda x, y: x * y
 sub = lambda x, y: x - y
 div = lambda x, y: x / y
+inner_product = lambda x, y: sum([xi * yi for xi, yi in zip(x, y)])
 
 
 def norm_data(data):
     d = len(data[0][0])
-    alpha = [-inf] * d
+    N = len(data)
+
+    # Computing empirical mean
+    mean = [0] * d
     for x, _ in data:
-        alpha = elem_wise(x, alpha, lambda x, y: max(abs(x), y))
-    n_data = []
-    for x, y in data:
-        n_data.append((elem_wise(x, alpha, div), y))
-    return n_data, alpha
+        mean = elem_wise(x, mean, op=add)
+    mean = elem_wise(mean, op=lambda x: x / N)
+
+    # Computing empirical std
+    var = [0] * d
+    for x, _ in data:
+        var = elem_wise(var, x, mean, op=lambda x, y, z: x + (y - z) ** 2)
+    std = elem_wise(var, op=lambda x: sqrt(x / N))
+
+    n_data = [
+        (elem_wise(x, mean, std, op=lambda _val, _mean, _std: (_val - _mean) / _std), y)
+        for x, y in data
+    ]
+    return n_data, mean, std
 
 
-def unorm_weights(weights, alpha):
-    w, bias = weights[1:], weights[0]
-    w = elem_wise(w, alpha, div)
+def unorm_weights(weights, mean, std):
+    w_star, bias_star = weights[1:], weights[0]
+    w = elem_wise(w_star, std, op=div)
+    bias = bias_star - inner_product(w, mean)
     return [bias] + w
 
 
@@ -71,18 +84,14 @@ def gradient_descent(target, bounds, max_steps=10000, max_time=2):
             w = w_prev
 
         # Updating v
-        v = [
-            sqrt(x) + eps
-            for x in elem_wise(
-                scalar_mult(beta, v),
-                scalar_mult(1 - beta, elem_wise(gradient, gradient, mult)),
-                add,
-            )
-        ]
+
+        v = elem_wise(
+            v, gradient, op=lambda x, y: sqrt(beta * x + (1 - beta) * (y ** 2)) + eps
+        )
         checked = False
         # Adjusting learning rate if stepped out of the bounds
         for i in range(10):
-            w = elem_wise(w, scalar_mult(lr, elem_wise(gradient, v, div)), sub)
+            w = elem_wise(w, gradient, v, op=lambda x, y, z: x - lr * y / z)
 
             if check_bounds(w, lower, upper):
                 checked = True
@@ -106,7 +115,7 @@ def logistic_regression(data):
 
     def linear(w, x):
         w, bias = w[1:], w[0]
-        return sum([wi * xi for wi, xi in zip(w, x)]) + bias
+        return inner_product(w, x) + bias
 
     def ce(weights):
         f = 0
@@ -115,8 +124,9 @@ def logistic_regression(data):
         for x, y in data:
             arg = y * linear(weights, x)
             f += log(1 + e ** (-arg))
+
             gradient = elem_wise(
-                gradient, scalar_mult(-y / (1 + e ** arg), [1] + x), add
+                gradient, [1] + x, op=lambda a, b: a + (-y / (1 + e ** arg) * b)
             )
 
         return f / N, [g / N for g in gradient]
@@ -133,7 +143,7 @@ data = []
 for _ in range(n):
     line = list(map(float, input().split()))
     data.append((line[:-1], line[-1]))
-data, alpha = norm_data(data)
+data, mean, std = norm_data(data)
 w = logistic_regression(data)
-w = unorm_weights(w, alpha)
+w = unorm_weights(w, mean, std)
 print(" ".join([str(x) for x in w]))
