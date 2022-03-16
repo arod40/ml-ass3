@@ -1,5 +1,6 @@
 from datetime import datetime
 from math import sqrt, inf, log, e
+from random import random
 
 
 _inf = 2e9
@@ -58,18 +59,18 @@ def gradient_descent(target, bounds, max_steps=10000, max_time=2):
     lower, upper = bounds
     d = len(lower)
 
-    lr = 0.1
+    lr = 1
     eps = 1e-8
     beta = 0.9
     f_prev = inf
     w_prev = None
 
-    w = [0 for u, l in zip(upper, lower)]
+    w = [random() for u, l in zip(upper, lower)]
     gradient = [0] * d
     v = [0] * d
 
     it = 0
-    while it < max_steps and (datetime.now() - time_start).seconds < max_time:
+    while it < max_steps and (datetime.now() - time_start).total_seconds() < max_time:
         it += 1
 
         f, gradient = target(w)
@@ -79,12 +80,11 @@ def gradient_descent(target, bounds, max_steps=10000, max_time=2):
             best_f = f
 
         # Shrink lr if overstepped
-        if f > f_prev and it > 10:
+        if f > f_prev:
             lr /= 10
             w = w_prev
 
         # Updating v
-
         v = elem_wise(
             v, gradient, op=lambda x, y: sqrt(beta * x + (1 - beta) * (y ** 2)) + eps
         )
@@ -100,7 +100,11 @@ def gradient_descent(target, bounds, max_steps=10000, max_time=2):
 
         # If never got within bounds or change is less than epsilon, finish up
         if not checked or abs(f_prev - f) < eps:
-            break
+            w = [random() for u, l in zip(upper, lower)]
+            f_prev = inf
+            w_prev = None
+            lr = 1
+            v = [0] * d
         else:
             f_prev = f
             w_prev = w
@@ -132,7 +136,10 @@ def logistic_regression(data):
         return f / N, [g / N for g in gradient]
 
     w, _, _, _ = gradient_descent(
-        ce, bounds=([-_inf] * (d + 1), [_inf] * (d + 1)), max_steps=100000, max_time=1,
+        ce,
+        bounds=([-_inf] * (d + 1), [_inf] * (d + 1)),
+        max_steps=100000,
+        max_time=1.7,
     )
 
     return w
@@ -143,6 +150,7 @@ data = []
 for _ in range(n):
     line = list(map(float, input().split()))
     data.append((line[:-1], line[-1]))
+
 data, mean, std = norm_data(data)
 w = logistic_regression(data)
 w = unorm_weights(w, mean, std)
