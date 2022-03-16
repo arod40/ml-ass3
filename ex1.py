@@ -1,7 +1,11 @@
+import sys
 from math import inf
 
 import matplotlib.pyplot as plt
 import numpy as np
+
+
+sigmoid = np.vectorize(lambda x: 1 / (1 + np.e ** (-x)))
 
 
 def gradient_ascent(target, d, bounds, max_steps=10000, lr=0.1):
@@ -54,13 +58,14 @@ def pocket_algorithm(X, y, max_iter=-1, w_init=None):
 
         if num_inc < least_inc:
             least_inc = num_inc
-            best_w = w
+            best_w = w.copy()
         if num_inc == 0:
             break
 
         incorrect_x = X[inc_idxs][:1, :].transpose()
         incorrect_y = y[inc_idxs][0].squeeze()
         w += incorrect_y * incorrect_x
+
     return best_w, (perceptron(X, w) != y).sum()
 
 
@@ -70,7 +75,6 @@ def linear_regression(X, y):
 
 
 def logistic_regression(X, y, max_iter, lr):
-    sigmoid = np.vectorize(lambda x: 1 / (1 + np.e ** (-x)))
     X_t = X.transpose()
 
     def ce(w):
@@ -122,53 +126,120 @@ def add_outliers(y, ratio=0.1):
     return y_outliers
 
 
+def get_perceptron_classifier(w):
+    def perceptron(X):
+        val = X @ w
+        ones = np.ones(val.shape)
+        return (val >= 0) * ones - (val < 0) * ones
+
+    return perceptron
+
+
+def get_logistic_regression_classifier(w, prob=0.5):
+    def log_reg_class(X):
+        val = sigmoid(X @ w)
+        ones = np.ones(w.shape[0])
+        return (val >= prob) * ones - (val < prob) * ones
+
+    return log_reg_class
+
+
+def evaluate(class_func, X, y):
+    return (class_func(X) == y).sum() / X.shape[0]
+
+
 if __name__ == "__main__":
-    X, y = get_data()
-    y_ = y.squeeze()
+    np.random.seed(4)
 
-    plt.xlim(X[:, 1].min() - 1, X[:, 1].max() + 1)
-    plt.ylim(X[:, 2].min() - 1, X[:, 2].max() + 1)
+    item = sys.argv[1]
+    if item == "1":
+        X_in, y_in = get_data()
+        X_out, y_out = get_data()
 
-    plt.scatter(X[y_ == 1, 1], X[y_ == 1, 2], marker="o", color="blue")
-    plt.scatter(X[y_ == -1, 1], X[y_ == -1, 2], marker="x", color="red")
+        word = "E_in"
+        if word == "E_in":
+            X, y = X_in, y_in
+        elif word == "E_out":
+            X, y = X_out, y_out
 
-    w_lg = linear_regression(X, y)
-    w_p, inc1 = pocket_algorithm(X, y, max_iter=10000)
-    w_p2, inc2 = pocket_algorithm(X, y, max_iter=10000, w_init=w_lg)
-    w_log = logistic_regression(X, y, max_iter=10000, lr=0.1)
+        y_ = y.squeeze()
 
-    plot_line(
-        list(w_lg), X[:, 1].min(), X[:, 1].max(), "blue", label="linear regression"
-    )
-    plot_line(list(w_p), X[:, 1].min(), X[:, 1].max(), "red", label="pocket algorithm")
-    # plot_line(
-    #     list(w_p2),
-    #     X[:, 1].min(),
-    #     X[:, 1].max(),
-    #     "green",
-    #     label="pocket with lin regression init",
-    # )
-    plot_line(
-        list(w_log), X[:, 1].min(), X[:, 1].max(), "black", label="logistic regression"
-    )
-    plt.legend()
-    plt.show()
+        w_p, inc1 = pocket_algorithm(X_in, y_in, max_iter=10000)
+        w_lg = linear_regression(X_in, y_in)
+        w_p2, inc2 = pocket_algorithm(X_in, y_in, max_iter=10000, w_init=w_lg)
 
-    plt.xlim(X[:, 1].min() - 1, X[:, 1].max() + 1)
-    plt.ylim(X[:, 2].min() - 1, X[:, 2].max() + 1)
+        p_class = get_perceptron_classifier(w_p)
+        lg_class = get_perceptron_classifier(w_lg)
+        p2_class = get_perceptron_classifier(w_p2)
 
-    # y_outliers = add_outliers(y)
-    # y_ = y_outliers.squeeze()
-    # plt.scatter(X[y_ == 1, 1], X[y_ == 1, 2], marker="o", color="blue")
-    # plt.scatter(X[y_ == -1, 1], X[y_ == -1, 2], marker="x", color="red")
+        print(f"Pocket Algorithm {word}:", evaluate(p_class, X, y))
+        print(f"Linear Regression {word}:", evaluate(lg_class, X, y))
+        print(
+            f"Pocket algorithm with linear regression {word}:",
+            evaluate(p2_class, X, y),
+        )
 
-    # y = y_outliers
-    # w_lg = linear_regression(X, y)
-    # w_p, inc1 = pocket_algorithm(X, y, max_iter=10000)
-    # w_p2, inc2 = pocket_algorithm(X, y, max_iter=10000, w_init=w_lg)
+        plt.xlim(X[:, 1].min() - 1, X[:, 1].max() + 1)
+        plt.ylim(X[:, 2].min() - 1, X[:, 2].max() + 1)
 
-    # plot_line(list(w_lg), X[:, 1].min(), X[:, 1].max(), "blue")
-    # plot_line(list(w_p), X[:, 1].min(), X[:, 1].max(), "red")
-    # plot_line(list(w_p2), X[:, 1].min(), X[:, 1].max(), "green")
-    # plt.show()
+        plt.scatter(X[y_ == 1, 1], X[y_ == 1, 2], marker="o", color="blue")
+        plt.scatter(X[y_ == -1, 1], X[y_ == -1, 2], marker="x", color="red")
 
+        plot_line(
+            list(w_p), X[:, 1].min(), X[:, 1].max(), "red", label="pocket algorithm",
+        )
+        plot_line(
+            list(w_lg), X[:, 1].min(), X[:, 1].max(), "blue", label="linear regression",
+        )
+        plot_line(
+            list(w_p2),
+            X[:, 1].min(),
+            X[:, 1].max(),
+            "green",
+            label="pocket with lin regression init",
+        )
+        plt.legend()
+        plt.show()
+
+        print("ADDING OUTLIERS")
+
+        y_outliers = add_outliers(y_in)
+        y = y_outliers
+        y_ = y_outliers.squeeze()
+
+        w_lg = linear_regression(X_in, y_outliers)
+        w_p, inc1 = pocket_algorithm(X_in, y_outliers, max_iter=10000)
+        w_p2, inc2 = pocket_algorithm(X_in, y_outliers, max_iter=10000, w_init=w_lg)
+
+        p_class = get_perceptron_classifier(w_p)
+        lg_class = get_perceptron_classifier(w_lg)
+        p2_class = get_perceptron_classifier(w_p2)
+
+        print(f"Pocket Algorithm {word}:", evaluate(p_class, X, y))
+        print(f"Linear Regression {word}:", evaluate(lg_class, X, y))
+        print(
+            f"Pocket algorithm with linear regression {word}:",
+            evaluate(p2_class, X, y),
+        )
+
+        plt.xlim(X[:, 1].min() - 1, X[:, 1].max() + 1)
+        plt.ylim(X[:, 2].min() - 1, X[:, 2].max() + 1)
+
+        plt.scatter(X[y_ == 1, 1], X[y_ == 1, 2], marker="o", color="blue")
+        plt.scatter(X[y_ == -1, 1], X[y_ == -1, 2], marker="x", color="red")
+
+        plot_line(
+            list(w_p), X[:, 1].min(), X[:, 1].max(), "red", label="pocket algorithm",
+        )
+        plot_line(
+            list(w_lg), X[:, 1].min(), X[:, 1].max(), "blue", label="linear regression",
+        )
+        plot_line(
+            list(w_p2),
+            X[:, 1].min(),
+            X[:, 1].max(),
+            "green",
+            label="pocket with lin regression init",
+        )
+        plt.legend()
+        plt.show()
