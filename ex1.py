@@ -1,5 +1,3 @@
-from cProfile import label
-import sys
 from math import inf
 import time
 
@@ -18,7 +16,9 @@ def timing(func):
     return wrapper
 
 
-sigmoid = np.vectorize(lambda x: 1 / (1 + np.e ** (-x)))
+sigmoid = np.vectorize(
+    lambda x: 1 / (1 + np.e ** (-x)) if x > 0 else 1 - 1 / (1 + np.e ** (x))
+)
 
 
 def gradient_ascent(target, d, bounds, max_steps=10000, lr=0.1):
@@ -230,35 +230,57 @@ def plot_line(w, x1, x2, color="black", label=""):
     plt.plot([x1, x2], [y1, y2], color=color, label=label)
 
 
+def plot_error(ax, results, color, label, constant=False, bars=False, move=-1):
+    if not constant and not bars:
+        X = results.keys()
+        y_in = [
+            results[key][0][0] for key in X
+        ]  # 0 is the index of the E_in results. 0 to take the mean
+        y_out = [
+            results[key][1][0] for key in X
+        ]  # 1 is the index of the E_out results. 0 to take the mean
+        ax.plot(X, y_in, color=color, linestyle="--")
+        ax.plot(X, y_out, color=color, label=f"{label}")
+    elif not bars:
+        ax.axhline(y=results[0][0], color=color, linestyle="--")
+        ax.axhline(y=results[1][0], color=color, label=label)
+    else:
+        labels = results.keys()
+        X = np.arange(len(labels))  # the label locations
+        y_in = [
+            results[key][0][0] for key in results.keys()
+        ]  # 0 is the index of the E_in results. 0 to take the mean
+
+        width = 0.35
+        ax.bar(X + move * width / 2, y_in, width, label=label, color=color)
+        ax.set_xticks(X)
+        ax.set_xticklabels(labels)
+
+
+def plot_running_time(ax, results, color, label, constant=False, bars=False, move=-1):
+    if not constant and not bars:
+        X = results.keys()
+        y = [
+            results[key][2][0] for key in X
+        ]  # 2 is the index of the running time results. 0 to take the mean
+        ax.plot(X, y, color=color, label=label)
+    elif not bars:
+        ax.axhline(y=results[2][0], color=color, label=label)
+    else:
+        labels = results.keys()
+        X = np.arange(len(labels))  # the label locations
+        y_in = [
+            results[key][2][0] for key in results.keys()
+        ]  # 2 is the index of the running time results. 0 to take the mean
+
+        width = 0.35
+        ax.bar(X + move * width / 2, y_in, width, label=label, color=color)
+        ax.set_xticks(X)
+        ax.set_xticklabels(labels)
+
+
 def plot_pocket_results(p_results, plr_results, lr_results=None):
     figure, axis = plt.subplots(1, 2, figsize=(12.8, 4.8))
-
-    def plot_error(ax, results, color, label, constant=False):
-        ax.set_xlabel("iterations")
-        ax.set_ylabel("error")
-        if not constant:
-            X = results.keys()
-            y_in = [
-                results[key][0][0] for key in X
-            ]  # 1 is the index of the E_out results. 0 to take the mean
-            y_out = [
-                results[key][1][0] for key in X
-            ]  # 1 is the index of the E_out results. 0 to take the mean
-            ax.plot(X, y_in, color=color, linestyle="--")
-            ax.plot(X, y_out, color=color, label=f"{label}")
-        else:
-            ax.axhline(y=results[0][0], color=color, linestyle="--")
-            ax.axhline(y=results[1][0], color=color, label=label)
-
-    def plot_running_time(ax, results, color, label, constant=False):
-        if not constant:
-            X = results.keys()
-            y = [
-                results[key][2][0] for key in X
-            ]  # 2 is the index of the running time results. 0 to take the mean
-            ax.plot(X, y, color=color, label=label)
-        else:
-            ax.axhline(y=results[2][0], color=color, label=label)
 
     # Plotting iterations vs error
     ax = axis[0]
@@ -283,45 +305,44 @@ def plot_pocket_results(p_results, plr_results, lr_results=None):
     plt.show()
 
 
-def plot_log_reg_results(log_reg_results):
-    figure, axis = plt.subplots(1, 1, figsize=(6, 4, 4.8))
+def plot_log_reg_results(log_reg_results, log_reg_results_outliers, xlabel, bars=False):
+    figure, axis = plt.subplots(1, 2, figsize=(12.8, 4.8))
 
-    # Plotting iterations vs error
     ax = axis[0]
-    ax.set_xlabel("iterations")
-    ax.set_ylabel("E_out")
-    X = log_reg_results.keys()
-    y = [
-        log_reg_results[key][1][0] for key in X
-    ]  # 1 is the index of the E_out results. 0 to take the mean
-    ax.plot(X, y, color="orange")
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel("error")
+    plot_error(ax, log_reg_results, "orange", "w/o outliers", bars=bars, move=-1)
+    plot_error(ax, log_reg_results_outliers, "blue", "with outliers", bars=bars, move=1)
+    ax.legend()
 
-    # Plotting iterations vs running time
     ax = axis[1]
-    ax.set_xlabel("iterations")
-    ax.set_ylabel("running time")
-    X = log_reg_results.keys()
-    y = [
-        log_reg_results[key][2][0] for key in X
-    ]  # 2 is the index of the running time results. 0 to take the mean
-    ax.plot(X, y, color="orange")
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel("running time (seconds)")
+    plot_running_time(ax, log_reg_results, "orange", "w/o outliers", bars=bars, move=-1)
+    plot_running_time(
+        ax, log_reg_results_outliers, "blue", "with outliers", bars=bars, move=1,
+    )
+    ax.legend()
+
+    plt.show()
 
 
 if __name__ == "__main__":
-    outliers = False
-    lg_exp = True
-    pocket_exp = True
+    lg_exp = False
+    pocket_exp = False
     log_reg_max_iter_exp = False
-    log_reg_lr_exp = False
+    log_reg_lr_exp = True
 
     np.random.seed(0)
-    no_exps = 1000
+    no_exps = 100
 
     datasets = []
+    datasets_outliers = []
     for _ in range(no_exps):
         c = 3 * np.random.randn(2, 2)  # use the same center for both datasets
-        datasets.append(
-            (get_data(c, outliers=outliers), get_data(c, outliers=outliers))
+        datasets.append((get_data(c, outliers=False), get_data(c, outliers=False)))
+        datasets_outliers.append(
+            (get_data(c, outliers=True), get_data(c, outliers=False))
         )
 
     if lg_exp:
@@ -377,8 +398,9 @@ if __name__ == "__main__":
         )
         print("-----------------------------------------------------------")
 
-        log_reg_max_iter_values = list(range(100, 1000, 50))
+        log_reg_max_iter_values = list(range(1, 201, 10))
         log_reg_max_iter_results = {}
+        log_reg_max_iter_results_outliers = {}
         for max_iter in log_reg_max_iter_values:
             desc, (learning_alg, args, kwargs), classifier = get_experiment_setup(
                 "log_reg"
@@ -392,22 +414,59 @@ if __name__ == "__main__":
                 print(metric, "mean:", mean, "std:", std)
             log_reg_max_iter_results[max_iter] = metrics
 
+            metrics = experiment(
+                desc + "[OUTLIERS]",
+                datasets_outliers,
+                learning_alg,
+                classifier,
+                *args,
+                **kwargs,
+            )
+            for metric, (mean, std) in zip(["E_in", "E_out", "time"], metrics):
+                print(metric, "mean:", mean, "std:", std)
+            log_reg_max_iter_results_outliers[max_iter] = metrics
+
+        plot_log_reg_results(
+            log_reg_max_iter_results,
+            log_reg_max_iter_results_outliers,
+            xlabel="iterations",
+        )
+
     if log_reg_lr_exp:
         print("-----------------------------------------------------------")
         print("(Running logistic regression with different learning rates")
         print("-----------------------------------------------------------")
 
-        lr_values = [0.1, 0.05, 0.01, 0.005, 0.001]
+        lr_values = [1, 0.5, 0.1, 0.05, 0.01, 0.005, 0.001, 0.0005, 0.0001]
         log_reg_lr_results = {}
+        log_reg_lr_results_outliers = {}
         for lr in lr_values:
             desc, (learning_alg, args, kwargs), classifier = get_experiment_setup(
                 "log_reg"
             )
             print("lr=", lr)
-            kwargs["lr"] = max_iter
+            kwargs["lr"] = lr
+            kwargs["max_iter"] = 400
             metrics = experiment(
                 desc, datasets, learning_alg, classifier, *args, **kwargs
             )
             for metric, (mean, std) in zip(["E_in", "E_out", "time"], metrics):
                 print(metric, "mean:", mean, "std:", std)
             log_reg_lr_results[lr] = metrics
+
+            metrics = experiment(
+                desc + "[OUTLIERS]",
+                datasets_outliers,
+                learning_alg,
+                classifier,
+                *args,
+                **kwargs,
+            )
+            for metric, (mean, std) in zip(["E_in", "E_out", "time"], metrics):
+                print(metric, "mean:", mean, "std:", std)
+            log_reg_lr_results_outliers[lr] = metrics
+
+        plot_log_reg_results(
+            log_reg_lr_results, log_reg_lr_results_outliers, xlabel="lr", bars=True
+        )
+
