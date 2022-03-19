@@ -2,7 +2,7 @@ from math import inf
 
 import numpy as np
 
-from .utils import timing
+from utils import timing
 
 sigmoid = np.vectorize(
     lambda x: 1 / (1 + np.e ** (-x)) if x > 0 else 1 - 1 / (1 + np.e ** (x))

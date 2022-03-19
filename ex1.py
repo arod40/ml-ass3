@@ -1,8 +1,8 @@
 import numpy as np
 from tqdm import tqdm
 
-from .plot_utils import *
-from .models import *
+from plot_utils import *
+from models import *
 
 
 def add_outliers(y, ratio=0.1):
@@ -99,9 +99,9 @@ def get_experiment_setup(alg_code):
 
 if __name__ == "__main__":
     lg_exp = False
-    pocket_exp = False
+    pocket_and_lin_reg_exp = True
     log_reg_max_iter_exp = False
-    log_reg_lr_exp = True
+    log_reg_lr_exp = False
 
     np.random.seed(0)
     no_exps = 100
@@ -115,21 +115,21 @@ if __name__ == "__main__":
             (get_data(c, outliers=True), get_data(c, outliers=False))
         )
 
-    if lg_exp:
+    if pocket_and_lin_reg_exp:
         print("-----------------------------------------------------------")
         print("Running linear regression experiments")
         print("-----------------------------------------------------------")
 
         # Without outliers
         desc, (learning_alg, args, kwargs), classifier = get_experiment_setup("lin_reg")
-        lr_metrics = experiment(
+        lr_results = experiment(
             desc, datasets, learning_alg, classifier, *args, **kwargs
         )
-        for metric, (mean, std) in zip(["E_in", "E_out", "time"], lr_metrics):
+        for metric, (mean, std) in zip(["E_in", "E_out", "time"], lr_results):
             print(metric, "mean:", mean, "std:", std)
 
         # With outliers
-        lr_metrics_outliers = experiment(
+        lr_results_outliers = experiment(
             desc + "[OUTLIERS]",
             datasets_outliers,
             learning_alg,
@@ -137,10 +137,9 @@ if __name__ == "__main__":
             *args,
             **kwargs,
         )
-        for metric, (mean, std) in zip(["E_in", "E_out", "time"], lr_metrics_outliers):
+        for metric, (mean, std) in zip(["E_in", "E_out", "time"], lr_results_outliers):
             print(metric, "mean:", mean, "std:", std)
 
-    if pocket_exp:
         print("-----------------------------------------------------------")
         print(
             "Running pocket algorithm variants experiments (varying max_iter to find out optimal values)"
@@ -150,6 +149,8 @@ if __name__ == "__main__":
         pocket_max_iter_values = list(range(20, 1200, 20))
         p_results = {}
         plr_results = {}
+        p_results_outliers = {}
+        plr_results_outliers = {}
         for max_iter in pocket_max_iter_values:
             print("max_iter=", max_iter)
             # Pocket algorithm
@@ -159,6 +160,15 @@ if __name__ == "__main__":
                 desc, datasets, learning_alg, classifier, *args, **kwargs
             )
             p_results[max_iter] = metrics
+            metrics = experiment(
+                desc + "[OUTLIERS]",
+                datasets_outliers,
+                learning_alg,
+                classifier,
+                *args,
+                **kwargs,
+            )
+            p_results_outliers[max_iter] = metrics
 
             # Pocket algorithm with linear regression
             desc, (learning_alg, args, kwargs), classifier = get_experiment_setup(
@@ -169,9 +179,21 @@ if __name__ == "__main__":
                 desc, datasets, learning_alg, classifier, *args, **kwargs
             )
             plr_results[max_iter] = metrics
+            metrics = experiment(
+                desc + "[OUTLIERS]",
+                datasets_outliers,
+                learning_alg,
+                classifier,
+                *args,
+                **kwargs,
+            )
+            plr_results_outliers[max_iter] = metrics
 
-        plot_pocket_results(
-            p_results, plr_results, lr_results=lr_metrics if lg_exp else None
+        # plot_pocket_lin_reg_results(p_results, plr_results, lr_results)
+        plot_normal_vs_outliers(
+            (p_results, p_results_outliers),
+            (plr_results, plr_results_outliers),
+            (lr_results, lr_results_outliers),
         )
 
     if log_reg_max_iter_exp:
@@ -250,6 +272,11 @@ if __name__ == "__main__":
             log_reg_lr_results_outliers[lr] = metrics
 
         plot_log_reg_results(
-            log_reg_lr_results, log_reg_lr_results_outliers, xlabel="lr", bars=True
+            log_reg_lr_results,
+            log_reg_lr_results_outliers,
+            xlabel="lr",
+            bars=True,
+            e_in=True,
+            e_out=False,
         )
 
