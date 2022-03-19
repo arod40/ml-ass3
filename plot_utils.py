@@ -45,7 +45,7 @@ def plot_error_bars(ax, results, color, label, move=-1, e_in=True):
             results[key][1][0] for key in X
         ]  # 1 is the index of the E_out results. 0 to take the mean
 
-    width = 0.35
+    width = 0.25
     ax.bar(X + move * width / 2, y, width, label=label, color=color)
     ax.set_xticks(X)
     ax.set_xticklabels(labels)
@@ -70,7 +70,7 @@ def plot_running_time_bars(ax, results, color, label, move=-1):
         results[key][2][0] for key in results.keys()
     ]  # 2 is the index of the running time results. 0 to take the mean
 
-    width = 0.35
+    width = 0.25
     ax.bar(X + move * width / 2, y_in, width, label=label, color=color)
     ax.set_xticks(X)
     ax.set_xticklabels(labels)
@@ -137,7 +137,13 @@ def plot_normal_vs_outliers(p_results, plr_results, lr_results):
     plt.show()
 
 
-def plot_log_reg_results(log_reg_results, log_reg_results_outliers, xlabel, bars=False):
+def plot_log_reg_results(
+    log_reg_results,
+    log_reg_results_outliers,
+    log_reg_lr_results_separable,
+    xlabel,
+    bars=False,
+):
     figure, axis = plt.subplots(1, 2, figsize=(12.8, 4.8))
 
     ax = axis[0]
@@ -146,12 +152,16 @@ def plot_log_reg_results(log_reg_results, log_reg_results_outliers, xlabel, bars
     if not bars:
         plot_error(ax, log_reg_results, "orange", "w/o outliers", e_in=True)
         plot_error(ax, log_reg_results_outliers, "blue", "with outliers", e_in=True)
+        plot_error(ax, log_reg_lr_results_separable, "red", "separable", e_in=True)
     else:
         plot_error_bars(
-            ax, log_reg_results, "orange", "w/o outliers", move=-1, e_in=True
+            ax, log_reg_results, "orange", "w/o outliers", move=-2, e_in=True
         )
         plot_error_bars(
-            ax, log_reg_results_outliers, "blue", "with outliers", move=1, e_in=True
+            ax, log_reg_results_outliers, "blue", "with outliers", move=0, e_in=True
+        )
+        plot_error_bars(
+            ax, log_reg_lr_results_separable, "red", "separable", move=2, e_in=True
         )
     ax.legend()
 
@@ -161,10 +171,14 @@ def plot_log_reg_results(log_reg_results, log_reg_results_outliers, xlabel, bars
     if not bars:
         plot_running_time(ax, log_reg_results, "orange", "w/o outliers")
         plot_running_time(ax, log_reg_results_outliers, "blue", "with outliers")
+        plot_running_time(ax, log_reg_lr_results_separable, "red", "separable")
     else:
-        plot_running_time_bars(ax, log_reg_results, "orange", "w/o outliers", move=-1)
+        plot_running_time_bars(ax, log_reg_results, "orange", "w/o outliers", move=-2)
         plot_running_time_bars(
-            ax, log_reg_results_outliers, "blue", "with outliers", move=1,
+            ax, log_reg_results_outliers, "blue", "with outliers", move=0,
+        )
+        plot_running_time_bars(
+            ax, log_reg_lr_results_separable, "red", "separable", move=2,
         )
     ax.legend()
 

@@ -19,8 +19,12 @@ def add_outliers(y, ratio=0.1):
     return y_outliers
 
 
-def get_data(c, num_data_points=100, outliers=False):
+def get_data(c, num_data_points=100, outliers=False, separable=False):
     assert num_data_points % 2 == 0
+
+    if separable:
+        c = c * 2
+
     y = np.concatenate(
         [-1 * np.ones((num_data_points // 2, 1)), np.ones((num_data_points // 2, 1))]
     )
@@ -107,11 +111,15 @@ if __name__ == "__main__":
 
     datasets = []
     datasets_outliers = []
+    datasets_separable = []
     for _ in range(no_exps):
         c = 3 * np.random.randn(2, 2)  # use the same center for both datasets
         datasets.append((get_data(c, outliers=False), get_data(c, outliers=False)))
         datasets_outliers.append(
             (get_data(c, outliers=True), get_data(c, outliers=False))
+        )
+        datasets_separable.append(
+            (get_data(c, separable=True), get_data(c, separable=True))
         )
 
     if pocket_and_lin_reg_exp:
@@ -188,7 +196,7 @@ if __name__ == "__main__":
             )
             plr_results_outliers[max_iter] = metrics
 
-        # plot_pocket_lin_reg_results(p_results, plr_results, lr_results)
+        plot_pocket_lin_reg_results(p_results, plr_results, lr_results)
         plot_normal_vs_outliers(
             (p_results, p_results_outliers),
             (plr_results, plr_results_outliers),
@@ -202,9 +210,10 @@ if __name__ == "__main__":
         )
         print("-----------------------------------------------------------")
 
-        log_reg_max_iter_values = list(range(1, 201, 10))
+        log_reg_max_iter_values = list(range(1, 202, 10))
         log_reg_max_iter_results = {}
         log_reg_max_iter_results_outliers = {}
+        log_reg_max_iter_results_separable = {}
         for max_iter in log_reg_max_iter_values:
             desc, (learning_alg, args, kwargs), classifier = get_experiment_setup(
                 "log_reg"
@@ -230,9 +239,22 @@ if __name__ == "__main__":
                 print(metric, "mean:", mean, "std:", std)
             log_reg_max_iter_results_outliers[max_iter] = metrics
 
+            metrics = experiment(
+                desc + "[SEPARABLE]",
+                datasets_separable,
+                learning_alg,
+                classifier,
+                *args,
+                **kwargs,
+            )
+            for metric, (mean, std) in zip(["E_in", "E_out", "time"], metrics):
+                print(metric, "mean:", mean, "std:", std)
+            log_reg_max_iter_results_separable[max_iter] = metrics
+
         plot_log_reg_results(
             log_reg_max_iter_results,
             log_reg_max_iter_results_outliers,
+            log_reg_max_iter_results_separable,
             xlabel="iterations",
             bars=False,
         )
@@ -245,6 +267,7 @@ if __name__ == "__main__":
         lr_values = [1, 0.5, 0.1, 0.05, 0.01, 0.005, 0.001, 0.0005, 0.0001]
         log_reg_lr_results = {}
         log_reg_lr_results_outliers = {}
+        log_reg_lr_results_separable = {}
         for lr in lr_values:
             desc, (learning_alg, args, kwargs), classifier = get_experiment_setup(
                 "log_reg"
@@ -271,7 +294,23 @@ if __name__ == "__main__":
                 print(metric, "mean:", mean, "std:", std)
             log_reg_lr_results_outliers[lr] = metrics
 
+            metrics = experiment(
+                desc + "[SEPARABLE]",
+                datasets_separable,
+                learning_alg,
+                classifier,
+                *args,
+                **kwargs,
+            )
+            for metric, (mean, std) in zip(["E_in", "E_out", "time"], metrics):
+                print(metric, "mean:", mean, "std:", std)
+            log_reg_lr_results_separable[lr] = metrics
+
         plot_log_reg_results(
-            log_reg_lr_results, log_reg_lr_results_outliers, xlabel="lr", bars=True,
+            log_reg_lr_results,
+            log_reg_lr_results_outliers,
+            log_reg_lr_results_separable,
+            xlabel="lr",
+            bars=True,
         )
 
