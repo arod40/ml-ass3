@@ -40,6 +40,15 @@ def get_data(c, num_data_points=100, outliers=False, separable=False):
     return X, y
 
 
+def run_all(X_in, y_in):
+    _, w_p = pocket_algorithm(X_in, y_in, max_iter=1200)
+    _, w_lin_reg = linear_regression(X_in, y_in)
+    _, w_plin_reg = pocket_algorithm(X_in, y_in, max_iter=400, w_init=w_lin_reg)
+    _, w_log_reg = logistic_regression(X_in, y_in, max_iter=200, lr=0.005)
+
+    return w_p, w_lin_reg, w_plin_reg, w_log_reg
+
+
 def evaluate(class_func, w, X, y):
     return (class_func(X, w) != y).sum() / X.shape[0]
 
@@ -105,8 +114,9 @@ if __name__ == "__main__":
     pocket_and_lin_reg_exp = True
     log_reg_max_iter_exp = True
     log_reg_lr_exp = True
+    show_one = True
 
-    np.random.seed(0)
+    # np.random.seed(0)
     no_exps = 100
 
     datasets = []
@@ -313,4 +323,47 @@ if __name__ == "__main__":
             xlabel="lr",
             bars=True,
         )
+
+    if show_one:
+        names = [
+            "Pocket algorithm",
+            "Linear regression",
+            "Pocket alg. with linear reg. initial weights",
+            "Logistic regression",
+        ]
+        colors = ["orange", "blue", "red", "green"]
+        labels = [
+            "pocket w=0 init",
+            "linear regression",
+            "pocket lin reg init",
+            "logistic regression",
+        ]
+
+        examples = []
+        # print("On linearly separable data...")
+
+        (X_in, y_in), (X_out, y_out) = datasets[0]
+        solutions = run_all(X_in, y_in)
+        for w, name in zip(solutions, names):
+            print(name)
+            print(w)
+        examples.append((X_in, y_in, solutions, colors, labels))
+
+        print("On non-linearly separable data...")
+        (X_in, y_in), (X_out, y_out) = datasets[9]
+        solutions = run_all(X_in, y_in)
+        for w, name in zip(solutions, names):
+            print(name)
+            print(w)
+        examples.append((X_in, y_in, solutions, colors, labels))
+
+        print("On data with outliers...")
+        (X_in, y_in), (X_out, y_out) = datasets_outliers[2]
+        solutions = run_all(X_in, y_in)
+        for w, name in zip(solutions, names):
+            print(name)
+            print(w)
+        examples.append((X_in, y_in, solutions, colors, labels))
+
+        plot_examples(*examples)
 

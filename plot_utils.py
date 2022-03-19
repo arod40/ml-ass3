@@ -2,13 +2,16 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-def plot_line(w, x1, x2, color="black", label=""):
+def plot_line(w, x1, x2, color="black", label="", ax=None):
     C, A, B = w
 
     y1 = (-C - A * x1) / B
     y2 = (-C - A * x2) / B
 
-    plt.plot([x1, x2], [y1, y2], color=color, label=label)
+    if ax:
+        ax.plot([x1, x2], [y1, y2], color=color, label=label)
+    else:
+        plt.plot([x1, x2], [y1, y2], color=color, label=label)
 
 
 def plot_error(ax, results, color, label, e_in=True, linestyle=None):
@@ -191,3 +194,24 @@ def plot_log_reg_results(
 
     plt.show()
 
+
+def plot_data_and_solutions(ax, X, y, solutions, colors, labels):
+    y_ = y.squeeze()
+    ax.set_xlim(X[:, 1].min() - 1, X[:, 1].max() + 1)
+    ax.set_ylim(X[:, 2].min() - 1, X[:, 2].max() + 1)
+
+    ax.scatter(X[y_ == 1, 1], X[y_ == 1, 2], marker="o", color="blue")
+    ax.scatter(X[y_ == -1, 1], X[y_ == -1, 2], marker="x", color="red")
+
+    for w, color, label in zip(solutions, colors, labels):
+        plot_line(list(w), X[:, 1].min(), X[:, 1].max(), color, label=label, ax=ax)
+
+
+def plot_examples(*examples):
+    figure, axis = plt.subplots(1, len(examples), figsize=(6.4 * len(examples), 4.8))
+
+    for i, (X, y, solutions, colors, labels) in enumerate(examples):
+        ax = axis[i]
+        plot_data_and_solutions(ax, X, y, solutions, colors, labels)
+        ax.legend()
+    plt.show()
