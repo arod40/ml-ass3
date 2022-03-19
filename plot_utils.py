@@ -143,17 +143,29 @@ def plot_log_reg_results(log_reg_results, log_reg_results_outliers, xlabel, bars
     ax = axis[0]
     ax.set_xlabel(xlabel)
     ax.set_ylabel("error")
-    plot_error(ax, log_reg_results, "orange", "w/o outliers", bars=bars, move=-1)
-    plot_error(ax, log_reg_results_outliers, "blue", "with outliers", bars=bars, move=1)
+    if not bars:
+        plot_error(ax, log_reg_results, "orange", "w/o outliers", e_in=True)
+        plot_error(ax, log_reg_results_outliers, "blue", "with outliers", e_in=True)
+    else:
+        plot_error_bars(
+            ax, log_reg_results, "orange", "w/o outliers", move=-1, e_in=True
+        )
+        plot_error_bars(
+            ax, log_reg_results_outliers, "blue", "with outliers", move=1, e_in=True
+        )
     ax.legend()
 
     ax = axis[1]
     ax.set_xlabel(xlabel)
     ax.set_ylabel("running time (seconds)")
-    plot_running_time(ax, log_reg_results, "orange", "w/o outliers", bars=bars, move=-1)
-    plot_running_time(
-        ax, log_reg_results_outliers, "blue", "with outliers", bars=bars, move=1,
-    )
+    if not bars:
+        plot_running_time(ax, log_reg_results, "orange", "w/o outliers")
+        plot_running_time(ax, log_reg_results_outliers, "blue", "with outliers")
+    else:
+        plot_running_time_bars(ax, log_reg_results, "orange", "w/o outliers", move=-1)
+        plot_running_time_bars(
+            ax, log_reg_results_outliers, "blue", "with outliers", move=1,
+        )
     ax.legend()
 
     plt.show()

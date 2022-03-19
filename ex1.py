@@ -98,10 +98,9 @@ def get_experiment_setup(alg_code):
 
 
 if __name__ == "__main__":
-    lg_exp = False
     pocket_and_lin_reg_exp = True
-    log_reg_max_iter_exp = False
-    log_reg_lr_exp = False
+    log_reg_max_iter_exp = True
+    log_reg_lr_exp = True
 
     np.random.seed(0)
     no_exps = 100
@@ -235,6 +234,7 @@ if __name__ == "__main__":
             log_reg_max_iter_results,
             log_reg_max_iter_results_outliers,
             xlabel="iterations",
+            bars=False,
         )
 
     if log_reg_lr_exp:
@@ -272,11 +272,6 @@ if __name__ == "__main__":
             log_reg_lr_results_outliers[lr] = metrics
 
         plot_log_reg_results(
-            log_reg_lr_results,
-            log_reg_lr_results_outliers,
-            xlabel="lr",
-            bars=True,
-            e_in=True,
-            e_out=False,
+            log_reg_lr_results, log_reg_lr_results_outliers, xlabel="lr", bars=True,
         )
 
