@@ -210,7 +210,7 @@ if __name__ == "__main__":
         )
         print("-----------------------------------------------------------")
 
-        log_reg_max_iter_values = list(range(1, 202, 10))
+        log_reg_max_iter_values = list(range(1, 402, 10))
         log_reg_max_iter_results = {}
         log_reg_max_iter_results_outliers = {}
         log_reg_max_iter_results_separable = {}

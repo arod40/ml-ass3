@@ -42,7 +42,7 @@ def plot_error_bars(ax, results, color, label, move=-1, e_in=True):
         ]  # 0 is the index of the E_in results. 0 to take the mean
     else:
         y = [
-            results[key][1][0] for key in X
+            results[key][1][0] for key in results.keys()
         ]  # 1 is the index of the E_out results. 0 to take the mean
 
     width = 0.25
@@ -151,17 +151,24 @@ def plot_log_reg_results(
     ax.set_ylabel("error")
     if not bars:
         plot_error(ax, log_reg_results, "orange", "w/o outliers", e_in=True)
+        plot_error(ax, log_reg_results, "orange", "", e_in=False, linestyle="--")
         plot_error(ax, log_reg_results_outliers, "blue", "with outliers", e_in=True)
+        plot_error(
+            ax, log_reg_results_outliers, "blue", "", e_in=False, linestyle="--",
+        )
         plot_error(ax, log_reg_lr_results_separable, "red", "separable", e_in=True)
+        plot_error(
+            ax, log_reg_lr_results_separable, "red", "", e_in=False, linestyle="--",
+        )
     else:
         plot_error_bars(
-            ax, log_reg_results, "orange", "w/o outliers", move=-2, e_in=True
+            ax, log_reg_results, "orange", "w/o outliers", move=-2, e_in=False
         )
         plot_error_bars(
-            ax, log_reg_results_outliers, "blue", "with outliers", move=0, e_in=True
+            ax, log_reg_results_outliers, "blue", "with outliers", move=0, e_in=False
         )
         plot_error_bars(
-            ax, log_reg_lr_results_separable, "red", "separable", move=2, e_in=True
+            ax, log_reg_lr_results_separable, "red", "separable", move=2, e_in=False
         )
     ax.legend()
 
