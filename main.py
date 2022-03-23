@@ -19,11 +19,8 @@ def add_outliers(y, ratio=0.1):
     return y_outliers
 
 
-def get_data(c, num_data_points=100, outliers=False, separable=False):
+def get_data(c, num_data_points=100, outliers=False):
     assert num_data_points % 2 == 0
-
-    if separable:
-        c = c * 2
 
     y = np.concatenate(
         [-1 * np.ones((num_data_points // 2, 1)), np.ones((num_data_points // 2, 1))]
@@ -38,6 +35,25 @@ def get_data(c, num_data_points=100, outliers=False, separable=False):
         y = add_outliers(y)
 
     return X, y
+
+
+def is_separable(X, y):
+    _, w = linear_regression(X, y)
+    class_ = get_perceptron_classifier()
+    err = evaluate(class_, w, X, y)
+    return err == 0
+
+
+def get_separable_data(num_data_points=100):
+    sep = False
+    while not sep:
+        c = 6 * np.random.randn(2, 2)
+        train = get_data(c, num_data_points=num_data_points)
+        test = get_data(c, num_data_points=num_data_points)
+
+        sep = is_separable(*train) and is_separable(*test)
+
+    return train, test
 
 
 def run_all(X_in, y_in):
@@ -116,7 +132,7 @@ if __name__ == "__main__":
     log_reg_lr_exp = True
     show_one = True
 
-    # np.random.seed(0)
+    np.random.seed(0)
     no_exps = 100
 
     datasets = []
@@ -128,9 +144,7 @@ if __name__ == "__main__":
         datasets_outliers.append(
             (get_data(c, outliers=True), get_data(c, outliers=False))
         )
-        datasets_separable.append(
-            (get_data(c, separable=True), get_data(c, separable=True))
-        )
+        datasets_separable.append(get_separable_data())
 
     if pocket_and_lin_reg_exp:
         print("-----------------------------------------------------------")
@@ -340,8 +354,8 @@ if __name__ == "__main__":
         ]
 
         examples = []
-        # print("On linearly separable data...")
 
+        print("On linearly separable data...")
         (X_in, y_in), (X_out, y_out) = datasets[0]
         solutions = run_all(X_in, y_in)
         for w, name in zip(solutions, names):
