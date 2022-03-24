@@ -127,10 +127,10 @@ def get_experiment_setup(alg_code):
 
 
 if __name__ == "__main__":
-    pocket_and_lin_reg_exp = True
+    pocket_and_lin_reg_exp = False
     log_reg_max_iter_exp = True
     log_reg_lr_exp = True
-    show_one = True
+    show_one = False
 
     np.random.seed(0)
     no_exps = 100
@@ -364,7 +364,7 @@ if __name__ == "__main__":
         examples.append((X_in, y_in, solutions, colors, labels))
 
         print("On non-linearly separable data...")
-        (X_in, y_in), (X_out, y_out) = datasets[9]
+        (X_in, y_in), (X_out, y_out) = datasets[13]
         solutions = run_all(X_in, y_in)
         for w, name in zip(solutions, names):
             print(name)

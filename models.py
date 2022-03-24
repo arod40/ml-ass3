@@ -12,13 +12,11 @@ sigmoid = np.vectorize(
 def gradient_ascent(target, d, bounds, max_steps=10000, lr=0.1):
     lower, upper = bounds
 
-    best_f = inf
-    best_w = None
+    w = np.random.randn(d, 1)
+
+    best_f, _ = target(w)
+    best_w = w
     f_prev = inf
-
-    eps = 1e-8
-
-    w = np.zeros((d, 1))
 
     it = 0
     while it < max_steps:
@@ -30,12 +28,12 @@ def gradient_ascent(target, d, bounds, max_steps=10000, lr=0.1):
         if not (w >= lower).all() and (w <= upper).all():
             continue
 
-        if abs(f_prev - f) < eps:
+        if f != -inf and abs(f_prev - f) < eps:
             break
         else:
             f_prev = f
 
-        if f < best_f:
+        if f > best_f:
             best_w = w
             best_f = f
 
@@ -90,7 +88,7 @@ def logistic_regression(X, y, max_iter, lr):
 
     def ce(w):
         N = X.shape[0]
-        f = np.log(sigmoid(X @ w)).sum() / N
+        f = np.log(sigmoid(y * (X @ w))).sum() / N
         gradient = X_t @ (y * sigmoid(-y * (X @ w)))
 
         return f, gradient
