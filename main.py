@@ -60,7 +60,7 @@ def run_all(X_in, y_in):
     _, w_p = pocket_algorithm(X_in, y_in, max_iter=1200)
     _, w_lin_reg = linear_regression(X_in, y_in)
     _, w_plin_reg = pocket_algorithm(X_in, y_in, max_iter=400, w_init=w_lin_reg)
-    _, w_log_reg = logistic_regression(X_in, y_in, max_iter=200, lr=0.005)
+    _, w_log_reg = logistic_regression(X_in, y_in, max_iter=400, lr=0.005)
 
     return w_p, w_lin_reg, w_plin_reg, w_log_reg
 
@@ -128,9 +128,9 @@ def get_experiment_setup(alg_code):
 
 if __name__ == "__main__":
     pocket_and_lin_reg_exp = False
-    log_reg_max_iter_exp = True
-    log_reg_lr_exp = True
-    show_one = False
+    log_reg_max_iter_exp = False
+    log_reg_lr_exp = False
+    show_one = True
 
     np.random.seed(0)
     no_exps = 100

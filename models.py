@@ -12,6 +12,8 @@ sigmoid = np.vectorize(
 def gradient_ascent(target, d, bounds, max_steps=10000, lr=0.1):
     lower, upper = bounds
 
+    eps = 1e-8
+
     w = np.random.randn(d, 1)
 
     best_f, _ = target(w)
